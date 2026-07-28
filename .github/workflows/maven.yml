@@ -1,21 +1,13 @@
-# This workflow automatically tests new commits and pull requests as they come in.
-# Note that this does not upload any artifacts, you will need to compile mcMMO manually
-# if you wish to create the actual jar.
+# This workflow automatically tests and builds new commits and pull requests as they come in.
 name: Compile and test
 
 on:
-  # We run our tests whenever the pom or a source file was touched.
-  # There is no need to run Maven when only the changelog was touched.
-  # We may also want to re-run this workflow when the workflow file itself
-  # was updated tooo.
   push:
     paths:
     - 'src/**'
     - 'pom.xml'
     - '.github/workflows/maven.yml'
 
-  # Whenever someone submits a new pull request which modified the pom or a source file,
-  # we want to ensure it compiles successfully and that all tests will pass.
   pull_request:
     paths:
     - 'src/**'
@@ -31,13 +23,12 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    # 2. Setup Java 17 JDK (Adopt)
-    - name: Java 17 setup
+    # 2. Setup Java 25 JDK
+    - name: Java 25 setup
       uses: actions/setup-java@v4
       with:
-        distribution: 'adopt'
-        java-package: jdk
-        java-version: '17'
+        distribution: 'oracle' # Oracle 提供最新的 Java 25 早早期支持，也可尝试 'temurin'
+        java-version: '25'
 
     # 3. Setup local Maven package cache to speed up building
     - name: Cache Maven packages
@@ -50,3 +41,12 @@ jobs:
     # 4. Build via Maven 
     - name: Build via Maven
       run: mvn verify -B -Psql-tests --file pom.xml -DdisableXmlReport=true
+
+    # 5. Upload built JAR files as Artifacts
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-artifacts-java25
+        path: |
+          target/*.jar
+          !target/*-sources.jar
